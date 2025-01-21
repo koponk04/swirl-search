@@ -6,7 +6,7 @@
 from swirl.mixers import *
 import time
 from datetime import datetime
-
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -422,7 +422,17 @@ class SearchViewSet(viewsets.ModelViewSet):
             provider = int(request.GET['provider'])
 
         query_string = ""
-        if 'qs' in request.GET.keys():
+        try:
+            # Access the raw body regardless of the method
+            raw_body = request.body.decode('utf-8')  # Decode the raw body
+            body_data = json.loads(raw_body)  # Parse the JSON body if applicable
+            body_data_as_string = json.dumps(body_data)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            body_data_as_string = ""
+
+        if body_data_as_string:
+            query_string = body_data_as_string
+        elif 'qs' in request.GET.keys():
             query_string = request.GET['qs']
         if query_string:
             # check permissions
