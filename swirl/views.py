@@ -383,6 +383,14 @@ class SearchViewSet(viewsets.ModelViewSet):
             tags = tags.split(',')
 
         filters = request.GET.get('filters', "")
+        # Validate filters
+        try:
+            filters = json.loads(filters) if filters else ""
+        except json.JSONDecodeError:
+            filters = ""  # Default to empty string if invalid
+
+        # Optionally convert back to JSON string if needed
+        filters = json.dumps(filters) if isinstance(filters, (dict, list)) else filters
 
         query_string = ""
         if 'q' in request.GET.keys():
