@@ -382,6 +382,8 @@ class SearchViewSet(viewsets.ModelViewSet):
         if tags:
             tags = tags.split(',')
 
+        filters = request.GET.get('filters', "")
+
         query_string = ""
         if 'q' in request.GET.keys():
             query_string = request.GET['q']
@@ -393,7 +395,13 @@ class SearchViewSet(viewsets.ModelViewSet):
             # run search
             logger.debug(f"{module_name}: Search.create() from ?q")
             try:
-                new_search = Search.objects.create(query_string=query_string,searchprovider_list=providers,owner=self.request.user, tags=tags)
+                new_search = Search.objects.create(
+                    query_string=query_string,
+                    searchprovider_list=providers,
+                    owner=self.request.user,
+                    tags=tags,
+                    filters=filters
+                )
             except Error as err:
                 self.error(f'Search.create() failed: {err}')
             new_search.status = 'NEW_SEARCH'
@@ -443,8 +451,14 @@ class SearchViewSet(viewsets.ModelViewSet):
             logger.debug(f"{module_name}: Search.create() from ?qs")
             try:
                 # security review for 1.7 - OK, created with owner
-                new_search = Search.objects.create(query_string=query_string,searchprovider_list=providers,owner=self.request.user,
-                                                   pre_query_processors=pre_query_processor_single_list,tags=tags)
+                new_search = Search.objects.create(
+                    query_string=query_string,
+                    searchprovider_list=providers,
+                    owner=self.request.user,
+                    pre_query_processors=pre_query_processor_single_list,
+                    tags=tags,
+                    filters=filters
+                )
             except Error as err:
                 self.error(f'Search.create() failed: {err}')
             new_search.status = 'NEW_SEARCH'
