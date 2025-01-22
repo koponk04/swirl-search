@@ -56,6 +56,10 @@ class RequestsPost(Requests):
         headers = dict({
             "Content-Type": "application/json"
         })
+        if 'USE_X_FORM' in self.provider.query_mappings:
+            headers = dict({
+                "Content-Type": "application/x-www-form-urlencoded"
+            })
         headers.update(kwargs.get("headers", {}))
         kwargs['headers'] = headers
 
@@ -63,14 +67,38 @@ class RequestsPost(Requests):
 
         if post_json_str and post_json_str != '{}' and post_json_str != '"{}"':
             post_json_str     = bind_query_mappings(post_json_str, self.provider.query_mappings, self.provider.url)
+            qs_to_provider = self.query_string_to_provider
+            vector_qs_to_provider = ""
+
+            if 'USE_BODY_AS_QS' in self.provider.query_mappings:
+                body_data = json.loads(query)
+                qs_to_provider = body_data.get("query_string", "")
+                # Extract the array of floats and ensure it's a list
+                vector_qs_to_provider = body_data.get("vector_query_string", [])
+                if isinstance(vector_qs_to_provider, list):
+                    # Convert the list of floats into a comma-separated string
+                    vector_qs_to_provider_str = ",".join(map(str, vector_qs_to_provider))
+                else:
+                    # Handle the case where the data is not a list
+                    vector_qs_to_provider_str = ""
+
             if '{query_string}' in post_json_str:
                 if 'NO_URL_ENCODE' in self.provider.query_mappings:
-                    post_json_str = post_json_str.replace('{query_string}', self.query_string_to_provider)
+                    post_json_str = post_json_str.replace('{query_string}', qs_to_provider)
                 else:
-                    post_json_str = post_json_str.replace('{query_string}', urllib.parse.quote_plus(self.query_string_to_provider))
+                    post_json_str = post_json_str.replace('{query_string}', urllib.parse.quote_plus(qs_to_provider))
+
+            if '{vector_query_string}' in post_json_str:
+                if 'NO_URL_ENCODE' in self.provider.query_mappings:
+                    post_json_str = post_json_str.replace('{vector_query_string}', vector_qs_to_provider_str)
+                else:
+                    post_json_str = post_json_str.replace('{vector_query_string}', urllib.parse.quote_plus(vector_qs_to_provider_str))
             post_json = json.loads(post_json_str)
         else:
             post_json=query
 
         logger.debug(f"post_json_str:{post_json_str} query:{query} post_json:{post_json}")
+
+        if 'USE_X_FORM' in self.provider.query_mappings:
+            return requests.post(url, params=params, data=post_json, **kwargs)
         return requests.post(url, params=params, json=post_json, **kwargs)
