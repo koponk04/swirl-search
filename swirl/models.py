@@ -218,9 +218,7 @@ class Search(models.Model):
         return reverse('model-detail-view', args=[str(self.id)])
 
     def __str__(self):
-        signature = str(self.id) + ':' + str(self.searchprovider_list) + ':'
-        + self.query_string + ':'
-        + hashlib.md5(self.filters.encode()).hexdigest()
+        signature = str(self.id) + ':' + str(self.searchprovider_list) + ':' + self.query_string + ':' + hashlib.md5(self.filters.encode()).hexdigest()
         return signature
 
 class Result(models.Model):
